@@ -3,19 +3,10 @@ import React, { useState, useMemo } from 'react';
 import { 
   Plus, 
   Search, 
-  Filter, 
   X, 
   CheckCircle2, 
-  Clock, 
-  AlertCircle, 
   User, 
   Calendar,
-  MoreVertical,
-  ChevronRight,
-  ClipboardList,
-  ArrowUpDown,
-  UserCheck,
-  CalendarDays,
   ListTodo
 } from 'lucide-react';
 import { GlobalTask, GlobalTaskStatus, Instructor } from '../types';
@@ -34,12 +25,19 @@ const Tasks: React.FC<TasksProps> = ({ tasks, instructors, onAddTask, onUpdateSt
   const [dateSortOrder, setDateSortOrder] = useState<'asc' | 'desc'>('asc');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const [formData, setFormData] = useState({
+  // Priority alanı için tip tanımını açıkça belirttik ('as const' yerine union type kullandık)
+  const [formData, setFormData] = useState<{
+    title: string;
+    description: string;
+    assignedTo: string;
+    dueDate: string;
+    priority: 'Düşük' | 'Orta' | 'Yüksek';
+  }>({
     title: '',
     description: '',
     assignedTo: 'Yönetici',
     dueDate: '',
-    priority: 'Orta' as const
+    priority: 'Orta'
   });
 
   // Unique list of assignees for the filter
@@ -202,7 +200,7 @@ const Tasks: React.FC<TasksProps> = ({ tasks, instructors, onAddTask, onUpdateSt
           )) : (
             <div className="py-20 text-center flex flex-col items-center">
               <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6">
-                <ClipboardList size={40} className="text-slate-300" />
+                <ListTodo size={40} className="text-slate-300" />
               </div>
               <p className="text-slate-900 font-bold text-lg">Görev Bulunamadı</p>
               <p className="text-slate-500 mt-1 max-w-xs mx-auto">Arama kriterlerinize uygun bir kayıt yok. Yeni bir görev oluşturmayı deneyin.</p>
@@ -294,7 +292,7 @@ const Tasks: React.FC<TasksProps> = ({ tasks, instructors, onAddTask, onUpdateSt
                     <button
                       key={p}
                       type="button"
-                      onClick={() => setFormData({...formData, priority: p as any})}
+                      onClick={() => setFormData({...formData, priority: p as 'Düşük' | 'Orta' | 'Yüksek'})}
                       className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${
                         formData.priority === p 
                           ? (p === 'Yüksek' ? 'bg-rose-500 border-rose-500 text-white shadow-lg shadow-rose-500/30' : 
