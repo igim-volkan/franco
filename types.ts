@@ -58,6 +58,11 @@ export interface Instructor {
   phone?: string;
 }
 
+export enum CustomerStatus {
+  POTENTIAL = 'Potansiyel',
+  EXISTING = 'Mevcut'
+}
+
 export interface Customer {
   id: string;
   name: string;
@@ -68,6 +73,7 @@ export interface Customer {
   billingInfo: string;
   sector: string;
   employeeCount: number;
+  status: CustomerStatus; // Added status field
   createdAt: string;
 }
 

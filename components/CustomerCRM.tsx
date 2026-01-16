@@ -1,11 +1,11 @@
 
 import React, { useState, useMemo } from 'react';
-import { 
-  Plus, 
-  MoreVertical, 
-  Search, 
-  Filter, 
-  Building2, 
+import {
+  Plus,
+  MoreVertical,
+  Search,
+  Filter,
+  Building2,
   Users2,
   X,
   User,
@@ -20,9 +20,11 @@ import {
   ArrowUpRight,
   TrendingUp,
   Globe,
-  MoreHorizontal
+  MoreHorizontal,
+  Target,   // Added import
+  History   // Added import
 } from 'lucide-react';
-import { Customer } from '../types';
+import { Customer, CustomerStatus } from '../types';
 
 interface CustomerCRMProps {
   customers: Customer[];
@@ -45,10 +47,11 @@ const getRandomGradient = (name: string) => {
 
 const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onViewCustomer }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<CustomerStatus>(CustomerStatus.EXISTING); // Added tab state
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedSector, setSelectedSector] = useState<string>('Tümü');
-  
+
   const [formData, setFormData] = useState({
     name: '',
     contactPerson: '',
@@ -57,7 +60,8 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
     address: '',
     billingInfo: '',
     sector: '',
-    employeeCount: ''
+    employeeCount: '',
+    status: CustomerStatus.POTENTIAL // Default to POTENTIAL for new customers
   });
 
   const uniqueSectors = useMemo(() => {
@@ -79,6 +83,7 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
       billingInfo: formData.billingInfo,
       sector: formData.sector,
       employeeCount: parseInt(formData.employeeCount) || 0,
+      status: formData.status,
       createdAt: new Date().toISOString()
     };
 
@@ -88,14 +93,15 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setFormData({ name: '', contactPerson: '', email: '', phone: '', address: '', billingInfo: '', sector: '', employeeCount: '' });
+    setFormData({ name: '', contactPerson: '', email: '', phone: '', address: '', billingInfo: '', sector: '', employeeCount: '', status: CustomerStatus.POTENTIAL });
   };
 
   const filteredCustomers = customers.filter(c => {
-    const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          c.contactPerson.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.contactPerson.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesSector = selectedSector === 'Tümü' || c.sector === selectedSector;
-    return matchesSearch && matchesSector;
+    const matchesTab = c.status === activeTab;
+    return matchesSearch && matchesSector && matchesTab;
   });
 
   // Stats Logic
@@ -108,7 +114,7 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
+
       {/* Top Header & Actions */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
@@ -116,7 +122,31 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
           <p className="text-slate-500 mt-2 font-medium">Kurumsal ilişkilerinizi ve portföyünüzü yönetin.</p>
         </div>
         <div className="flex items-center gap-3">
-           <button 
+          {/* Tab Switcher */}
+          <div className="bg-white p-1 rounded-xl border border-slate-200 flex items-center gap-1 shadow-sm">
+            <button
+              onClick={() => setActiveTab(CustomerStatus.POTENTIAL)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === CustomerStatus.POTENTIAL
+                  ? 'bg-blue-50 text-blue-700 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                }`}
+            >
+              <Target size={16} />
+              <span>Potansiyel</span>
+            </button>
+            <button
+              onClick={() => setActiveTab(CustomerStatus.EXISTING)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === CustomerStatus.EXISTING
+                  ? 'bg-emerald-50 text-emerald-700 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                }`}
+            >
+              <History size={16} />
+              <span>Mevcut</span>
+            </button>
+          </div>
+
+          <button
             onClick={() => setIsModalOpen(true)}
             className="group flex items-center justify-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold hover:bg-blue-600 transition-all shadow-xl shadow-slate-900/20 active:scale-95"
           >
@@ -175,44 +205,43 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
         <div className="flex items-center gap-2 w-full lg:w-auto">
           <div className="relative flex-1 lg:w-80 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
-            <input 
-              type="text" 
-              placeholder="Şirket, yetkili veya sektör ara..." 
+            <input
+              type="text"
+              placeholder="Şirket, yetkili veya sektör ara..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm"
             />
           </div>
           <div className="bg-white p-1.5 rounded-2xl border border-slate-200 hidden sm:flex">
-             <button 
-               onClick={() => setViewMode('grid')}
-               className={`p-2 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-             >
-               <LayoutGrid size={20} />
-             </button>
-             <button 
-               onClick={() => setViewMode('list')}
-               className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-             >
-               <List size={20} />
-             </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              <LayoutGrid size={20} />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              <List size={20} />
+            </button>
           </div>
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto pb-2 lg:pb-0 no-scrollbar">
-           {uniqueSectors.map(sector => (
-             <button
-               key={sector}
-               onClick={() => setSelectedSector(sector)}
-               className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
-                 selectedSector === sector 
-                   ? 'bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/20' 
-                   : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-               }`}
-             >
-               {sector}
-             </button>
-           ))}
+          {uniqueSectors.map(sector => (
+            <button
+              key={sector}
+              onClick={() => setSelectedSector(sector)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${selectedSector === sector
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/20'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                }`}
+            >
+              {sector}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -220,8 +249,8 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredCustomers.length > 0 ? filteredCustomers.map((customer) => (
-            <div 
-              key={customer.id} 
+            <div
+              key={customer.id}
               onClick={() => onViewCustomer(customer.id)}
               className="group bg-white rounded-[2rem] p-6 border border-slate-200 hover:border-blue-300 hover:shadow-xl hover:shadow-blue-900/5 transition-all duration-300 cursor-pointer flex flex-col h-full"
             >
@@ -240,7 +269,7 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
                   <User size={14} />
                   {customer.contactPerson}
                 </p>
-                
+
                 <div className="flex flex-wrap gap-2 mt-4">
                   <span className="px-2.5 py-1 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1">
                     <Briefcase size={12} /> {customer.sector}
@@ -254,16 +283,16 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
               <div className="pt-6 border-t border-slate-50 flex items-center justify-between gap-2">
                 <div className="flex gap-1">
                   {customer.phone && (
-                    <button 
-                      onClick={(e) => e.stopPropagation()} 
+                    <button
+                      onClick={(e) => e.stopPropagation()}
                       className="p-2.5 bg-slate-50 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 rounded-xl transition-colors" title="Ara"
                     >
                       <Phone size={16} />
                     </button>
                   )}
                   {customer.email && (
-                    <button 
-                      onClick={(e) => e.stopPropagation()} 
+                    <button
+                      onClick={(e) => e.stopPropagation()}
                       className="p-2.5 bg-slate-50 text-slate-400 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-colors" title="E-posta Gönder"
                     >
                       <Mail size={16} />
@@ -301,8 +330,8 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredCustomers.map((customer) => (
-                <tr 
-                  key={customer.id} 
+                <tr
+                  key={customer.id}
                   onClick={() => onViewCustomer(customer.id)}
                   className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
                 >
@@ -324,14 +353,14 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
                   </td>
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-2">
-                       <User size={14} className="text-slate-300" />
-                       <span className="text-sm font-medium text-slate-700">{customer.contactPerson}</span>
+                      <User size={14} className="text-slate-300" />
+                      <span className="text-sm font-medium text-slate-700">{customer.contactPerson}</span>
                     </div>
                   </td>
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-2">
-                      {customer.email && <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600" title={customer.email}><Mail size={14}/></div>}
-                      {customer.phone && <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600" title={customer.phone}><Phone size={14}/></div>}
+                      {customer.email && <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600" title={customer.email}><Mail size={14} /></div>}
+                      {customer.phone && <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600" title={customer.phone}><Phone size={14} /></div>}
                     </div>
                   </td>
                   <td className="px-6 py-5 text-right">
@@ -359,8 +388,8 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
                   <p className="text-slate-500 text-xs font-bold mt-0.5 uppercase tracking-wide">Kurumsal Kayıt Formu</p>
                 </div>
               </div>
-              <button 
-                onClick={closeModal} 
+              <button
+                onClick={closeModal}
                 className="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-white rounded-full shadow-sm transition-all border border-transparent hover:border-slate-100"
               >
                 <X size={20} />
@@ -369,6 +398,31 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
 
             {/* Modal Body / Form */}
             <form onSubmit={handleSubmit} className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, status: CustomerStatus.POTENTIAL })}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${formData.status === CustomerStatus.POTENTIAL
+                      ? 'bg-white text-slate-900 shadow-sm ring-1 ring-black/5'
+                      : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                >
+                  <Target size={16} />
+                  Potansiyel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, status: CustomerStatus.EXISTING })}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${formData.status === CustomerStatus.EXISTING
+                      ? 'bg-white text-slate-900 shadow-sm ring-1 ring-black/5'
+                      : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                >
+                  <History size={16} />
+                  Mevcut
+                </button>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
                 {/* Şirket Adı */}
                 <div className="col-span-2 space-y-2">
@@ -376,14 +430,14 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
                     <Globe size={12} className="text-blue-500" />
                     Şirket / Müşteri Adı
                   </label>
-                  <input 
+                  <input
                     required
                     autoFocus
-                    type="text" 
+                    type="text"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900 placeholder:text-slate-300 placeholder:font-normal"
                     placeholder="Örn: FranCo Eğitim Hizmetleri A.Ş."
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
 
@@ -393,13 +447,13 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
                     <User size={12} className="text-blue-500" />
                     Kontak Kişisi
                   </label>
-                  <input 
+                  <input
                     required
-                    type="text" 
+                    type="text"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
                     placeholder="Ad Soyad"
                     value={formData.contactPerson}
-                    onChange={(e) => setFormData({...formData, contactPerson: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
                   />
                 </div>
 
@@ -409,12 +463,12 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
                     <Briefcase size={12} className="text-blue-500" />
                     Sektör
                   </label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
                     placeholder="Örn: Teknoloji"
                     value={formData.sector}
-                    onChange={(e) => setFormData({...formData, sector: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
                   />
                 </div>
 
@@ -424,12 +478,12 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
                     <Mail size={12} className="text-blue-500" />
                     E-posta
                   </label>
-                  <input 
-                    type="email" 
+                  <input
+                    type="email"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
                     placeholder="ornek@sirket.com"
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
                 </div>
 
@@ -439,12 +493,12 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
                     <Phone size={12} className="text-blue-500" />
                     Telefon
                   </label>
-                  <input 
-                    type="tel" 
+                  <input
+                    type="tel"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
                     placeholder="+90 5XX..."
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   />
                 </div>
 
@@ -454,12 +508,12 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
                     <Users2 size={12} className="text-blue-500" />
                     Ölçek (Çalışan)
                   </label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
                     placeholder="Örn: 250"
                     value={formData.employeeCount}
-                    onChange={(e) => setFormData({...formData, employeeCount: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, employeeCount: e.target.value })}
                   />
                 </div>
 
@@ -469,12 +523,12 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
                     <MapPin size={12} className="text-blue-500" />
                     Lokasyon / Adres
                   </label>
-                  <input 
+                  <input
                     type="text"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
                     placeholder="Tam adres..."
                     value={formData.address}
-                    onChange={(e) => setFormData({...formData, address: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   />
                 </div>
 
@@ -484,26 +538,26 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
                     <CreditCard size={12} className="text-blue-500" />
                     Fatura Başlığı & Vergi No
                   </label>
-                  <textarea 
+                  <textarea
                     rows={2}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none font-medium"
                     placeholder="Resmi fatura bilgileri..."
                     value={formData.billingInfo}
-                    onChange={(e) => setFormData({...formData, billingInfo: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, billingInfo: e.target.value })}
                   />
                 </div>
               </div>
 
               {/* Modal Footer / Actions */}
               <div className="mt-8 flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
-                <button 
+                <button
                   type="button"
                   onClick={closeModal}
                   className="px-6 py-3 border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all uppercase text-xs tracking-widest"
                 >
                   Vazgeç
                 </button>
-                <button 
+                <button
                   type="submit"
                   className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 active:scale-[0.98] uppercase text-xs tracking-widest flex items-center gap-2"
                 >
