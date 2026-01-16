@@ -1,0 +1,45 @@
+
+import React from 'react';
+import { 
+  LayoutDashboard, 
+  Users, 
+  Briefcase, 
+  Calendar as CalendarIcon, 
+  Settings as SettingsIcon, 
+  Bell, 
+  Search,
+  Plus,
+  MoreVertical,
+  CheckCircle2,
+  Clock,
+  ArrowRight,
+  TrendingUp,
+  GraduationCap,
+  ListTodo
+} from 'lucide-react';
+import { OpportunityStatus } from './types';
+
+export const NAVIGATION_ITEMS = [
+  { id: 'dashboard', label: 'Panel', icon: <LayoutDashboard size={20} /> },
+  { id: 'crm', label: 'Müşteriler', icon: <Users size={20} /> },
+  { id: 'sales', label: 'Satış Fırsatları', icon: <Briefcase size={20} /> },
+  { id: 'tasks', label: 'Görevler', icon: <ListTodo size={20} /> },
+  { id: 'calendar', label: 'Eğitmen Takvimi', icon: <CalendarIcon size={20} /> },
+  { id: 'settings', label: 'Ayarlar', icon: <SettingsIcon size={20} /> },
+];
+
+export const STATUS_STEPS = [
+  OpportunityStatus.NEW,
+  OpportunityStatus.DISCOVERY,
+  OpportunityStatus.PROPOSAL,
+  OpportunityStatus.NEGOTIATION,
+  OpportunityStatus.WON
+];
+
+export const COLORS = {
+  primary: '#2563eb',
+  secondary: '#64748b',
+  success: '#22c55e',
+  warning: '#f59e0b',
+  danger: '#ef4444',
+};

@@ -1,0 +1,8 @@
+{
+  "name": "FranCo Education CRM",
+  "description": "A sophisticated CRM and Training Management System for education companies, featuring customer management, sales opportunity tracking, and instructor scheduling.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
