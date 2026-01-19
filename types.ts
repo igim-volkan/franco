@@ -1,9 +1,9 @@
 
 export enum OpportunityStatus {
-  NEW = 'Yeni',
-  DISCOVERY = 'Keşif',
-  PROPOSAL = 'Teklif',
-  NEGOTIATION = 'Pazarlık',
+  PROPOSAL_SENT = 'Teklif Verildi',
+  PROPOSAL_DISCUSSED = 'Teklif Görüşüldü',
+  PROPOSAL_DETAILED = 'Teklif Detaylandırıldı',
+  CLOSE_TO_CLOSING = 'Bitmeye Çok Yakın',
   WON = 'Kazanıldı',
   LOST = 'Kaybedildi'
 }
@@ -70,19 +70,25 @@ export interface Customer {
   email?: string;
   phone?: string;
   address: string;
-  billingInfo: string;
+  billingAddress: string; // Changed from billingInfo
+  taxOffice: string;      // Added
+  taxNumber: string;      // Added
   sector: string;
   employeeCount: number;
   status: CustomerStatus; // Added status field
+  ownerId?: string; // Added ownerId field
   createdAt: string;
 }
 
 export interface Opportunity {
   id: string;
   customerId: string;
+  ownerId?: string; // Added ownerId field
   customerName: string;
   status: OpportunityStatus;
-  trainingType: string;
+  trainingTopics: string[]; // Changed from trainingType (string)
+  currency: 'TL' | 'USD' | 'EUR';
+  priceUnit: 'Toplam' | 'Günlük' | 'Saatlik';
   description: string;
   requestedDates: string[];
   amount?: number;
@@ -97,7 +103,11 @@ export interface TrainingEvent {
   title: string;
   startDate: string;
   endDate: string;
+  clientPartner?: string; // Added fields
+  location?: string;
+  hasKit?: boolean;
+  hasAssessment?: boolean;
   status: 'Planlandı' | 'Tamamlandı' | 'İptal Edildi';
 }
 
-export type ViewType = 'dashboard' | 'crm' | 'sales' | 'calendar' | 'tasks' | 'customer_detail' | 'settings';
+export type ViewType = 'dashboard' | 'my_page' | 'crm' | 'sales' | 'calendar' | 'tasks' | 'customer_detail' | 'settings';

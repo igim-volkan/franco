@@ -58,7 +58,9 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
     email: '',
     phone: '',
     address: '',
-    billingInfo: '',
+    billingAddress: '',
+    taxOffice: '',
+    taxNumber: '',
     sector: '',
     employeeCount: '',
     status: CustomerStatus.POTENTIAL // Default to POTENTIAL for new customers
@@ -80,7 +82,9 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
       email: formData.email,
       phone: formData.phone,
       address: formData.address,
-      billingInfo: formData.billingInfo,
+      billingAddress: formData.billingAddress,
+      taxOffice: formData.taxOffice,
+      taxNumber: formData.taxNumber,
       sector: formData.sector,
       employeeCount: parseInt(formData.employeeCount) || 0,
       status: formData.status,
@@ -93,7 +97,20 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setFormData({ name: '', contactPerson: '', email: '', phone: '', address: '', billingInfo: '', sector: '', employeeCount: '', status: CustomerStatus.POTENTIAL });
+    setIsModalOpen(false);
+    setFormData({
+      name: '',
+      contactPerson: '',
+      email: '',
+      phone: '',
+      address: '',
+      billingAddress: '',
+      taxOffice: '',
+      taxNumber: '',
+      sector: '',
+      employeeCount: '',
+      status: CustomerStatus.POTENTIAL
+    });
   };
 
   const filteredCustomers = customers.filter(c => {
@@ -127,8 +144,8 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
             <button
               onClick={() => setActiveTab(CustomerStatus.POTENTIAL)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === CustomerStatus.POTENTIAL
-                  ? 'bg-blue-50 text-blue-700 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                ? 'bg-blue-50 text-blue-700 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                 }`}
             >
               <Target size={16} />
@@ -137,8 +154,8 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
             <button
               onClick={() => setActiveTab(CustomerStatus.EXISTING)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === CustomerStatus.EXISTING
-                  ? 'bg-emerald-50 text-emerald-700 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                ? 'bg-emerald-50 text-emerald-700 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                 }`}
             >
               <History size={16} />
@@ -235,8 +252,8 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
               key={sector}
               onClick={() => setSelectedSector(sector)}
               className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${selectedSector === sector
-                  ? 'bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/20'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                ? 'bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/20'
+                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
                 }`}
             >
               {sector}
@@ -403,8 +420,8 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
                   type="button"
                   onClick={() => setFormData({ ...formData, status: CustomerStatus.POTENTIAL })}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${formData.status === CustomerStatus.POTENTIAL
-                      ? 'bg-white text-slate-900 shadow-sm ring-1 ring-black/5'
-                      : 'text-slate-500 hover:text-slate-700'
+                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-black/5'
+                    : 'text-slate-500 hover:text-slate-700'
                     }`}
                 >
                   <Target size={16} />
@@ -414,8 +431,8 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
                   type="button"
                   onClick={() => setFormData({ ...formData, status: CustomerStatus.EXISTING })}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${formData.status === CustomerStatus.EXISTING
-                      ? 'bg-white text-slate-900 shadow-sm ring-1 ring-black/5'
-                      : 'text-slate-500 hover:text-slate-700'
+                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-black/5'
+                    : 'text-slate-500 hover:text-slate-700'
                     }`}
                 >
                   <History size={16} />
@@ -533,18 +550,52 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
                 </div>
 
                 {/* Fatura Bilgileri */}
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <CreditCard size={12} className="text-blue-500" />
-                    Fatura Başlığı & Vergi No
-                  </label>
-                  <textarea
-                    rows={2}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none font-medium"
-                    placeholder="Resmi fatura bilgileri..."
-                    value={formData.billingInfo}
-                    onChange={(e) => setFormData({ ...formData, billingInfo: e.target.value })}
-                  />
+                {/* Fatura Bilgileri - Divided into 3 fields */}
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Fatura Adresi */}
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <CreditCard size={12} className="text-blue-500" />
+                      Fatura Adresi
+                    </label>
+                    <textarea
+                      rows={2}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none font-medium"
+                      placeholder="Tam fatura adresi..."
+                      value={formData.billingAddress}
+                      onChange={(e) => setFormData({ ...formData, billingAddress: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Vergi Dairesi */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <Building2 size={12} className="text-blue-500" />
+                      Vergi Dairesi
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
+                      placeholder="Örn: Zincirlikuyu"
+                      value={formData.taxOffice}
+                      onChange={(e) => setFormData({ ...formData, taxOffice: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Vergi No */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <CreditCard size={12} className="text-blue-500" />
+                      Vergi Numarası
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
+                      placeholder="10 haneli vergi no"
+                      value={formData.taxNumber}
+                      onChange={(e) => setFormData({ ...formData, taxNumber: e.target.value })}
+                    />
+                  </div>
                 </div>
               </div>
 

@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
+import {
+  ChevronLeft,
+  ChevronRight,
   User,
   Plus,
   X,
@@ -28,10 +28,10 @@ interface InstructorCalendarProps {
 
 type ViewType = 'month' | 'list';
 
-const InstructorCalendar: React.FC<InstructorCalendarProps> = ({ 
-  events, 
+const InstructorCalendar: React.FC<InstructorCalendarProps> = ({
+  events,
   instructors,
-  onAddEvent, 
+  onAddEvent,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date(2024, 5, 15));
   const [activeView, setActiveView] = useState<ViewType>('month');
@@ -43,7 +43,11 @@ const InstructorCalendar: React.FC<InstructorCalendarProps> = ({
     instructorName: '',
     opportunityId: '',
     startDate: '2024-06-15T09:00',
-    endDate: '2024-06-15T17:00'
+    endDate: '2024-06-15T17:00',
+    clientPartner: '',
+    location: '',
+    hasKit: false,
+    hasAssessment: false
   });
 
   const getDaysInMonth = (year: number, month: number) => {
@@ -90,7 +94,11 @@ const InstructorCalendar: React.FC<InstructorCalendarProps> = ({
       opportunityId: formData.opportunityId,
       startDate: formData.startDate,
       endDate: formData.endDate,
-      status: 'Planlandı'
+      status: 'Planlandı',
+      clientPartner: formData.clientPartner,
+      location: formData.location,
+      hasKit: formData.hasKit,
+      hasAssessment: formData.hasAssessment
     };
 
     onAddEvent(newEvent);
@@ -100,7 +108,11 @@ const InstructorCalendar: React.FC<InstructorCalendarProps> = ({
       instructorName: '',
       opportunityId: '',
       startDate: '2024-06-15T09:00',
-      endDate: '2024-06-15T17:00'
+      endDate: '2024-06-15T17:00',
+      clientPartner: '',
+      location: '',
+      hasKit: false,
+      hasAssessment: false
     });
   };
 
@@ -122,7 +134,7 @@ const InstructorCalendar: React.FC<InstructorCalendarProps> = ({
           <h1 className="text-3xl font-black font-heading text-slate-900 tracking-tight">Eğitmen Takvimi</h1>
           <p className="text-slate-500 mt-2 font-medium">Eğitim programını ve eğitmen doluluk durumlarını görüntüleyin.</p>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <div className="bg-white p-1.5 rounded-2xl border border-slate-200 flex items-center">
             <button
@@ -139,7 +151,7 @@ const InstructorCalendar: React.FC<InstructorCalendarProps> = ({
             </button>
           </div>
 
-          <button 
+          <button
             onClick={() => setIsAddModalOpen(true)}
             className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3.5 rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 active:scale-95 uppercase text-xs tracking-widest"
           >
@@ -178,13 +190,12 @@ const InstructorCalendar: React.FC<InstructorCalendarProps> = ({
                   const isToday = day === 15 && currentDate.getMonth() === 5; // Demo için 15 Haziran
 
                   return (
-                    <div 
-                      key={day} 
+                    <div
+                      key={day}
                       onClick={() => handleDayClick(day)}
-                      className={`h-24 md:h-32 border rounded-2xl p-2 cursor-pointer transition-all hover:shadow-md flex flex-col gap-1 ${
-                        isSelected ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/50' : 
+                      className={`h-24 md:h-32 border rounded-2xl p-2 cursor-pointer transition-all hover:shadow-md flex flex-col gap-1 ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/50' :
                         isToday ? 'border-blue-200 bg-blue-50/30' : 'border-slate-100 hover:border-blue-200'
-                      }`}
+                        }`}
                     >
                       <div className="flex justify-between items-start">
                         <span className={`text-sm font-bold ${isToday ? 'text-blue-600' : 'text-slate-700'}`}>{day}</span>
@@ -216,8 +227,8 @@ const InstructorCalendar: React.FC<InstructorCalendarProps> = ({
                     <div>
                       <h4 className="font-bold text-slate-900">{event.title}</h4>
                       <div className="flex items-center gap-3 text-sm text-slate-500 mt-1">
-                        <span className="flex items-center gap-1"><User size={14}/> {event.instructorName}</span>
-                        <span className="flex items-center gap-1"><Clock size={14}/> {new Date(event.startDate).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'})}</span>
+                        <span className="flex items-center gap-1"><User size={14} /> {event.instructorName}</span>
+                        <span className="flex items-center gap-1"><Clock size={14} /> {new Date(event.startDate).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                     </div>
                   </div>
@@ -232,31 +243,53 @@ const InstructorCalendar: React.FC<InstructorCalendarProps> = ({
           {/* Selected Date Details */}
           <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm min-h-[200px]">
             <h3 className="font-bold text-lg font-heading text-slate-900 mb-4 border-b border-slate-100 pb-4">
-              {selectedDate 
-                ? selectedDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' }) 
+              {selectedDate
+                ? selectedDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })
                 : 'Bir tarih seçin'}
             </h3>
-            
+
             <div className="space-y-3">
               {selectedDate ? (
                 getEventsForDate(selectedDate).length > 0 ? (
                   getEventsForDate(selectedDate).map(e => {
-                     const conf = getStatusConfig(e.status);
-                     const Icon = conf.icon;
-                     return (
-                        <div key={e.id} className={`p-4 rounded-2xl border ${conf.bg.replace('bg-', 'border-').replace('50', '200')} ${conf.bg}`}>
-                          <div className="flex items-start justify-between mb-2">
-                             <h4 className={`font-bold text-sm ${conf.text}`}>{e.title}</h4>
-                             <Icon size={16} className={conf.text} />
-                          </div>
-                          <p className="text-xs text-slate-600 font-bold flex items-center gap-1.5">
-                            <User size={12} /> {e.instructorName}
-                          </p>
-                          <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
-                            <Clock size={12} /> 09:00 - 17:00
-                          </p>
+                    const conf = getStatusConfig(e.status);
+                    const Icon = conf.icon;
+                    return (
+                      <div key={e.id} className={`p-4 rounded-2xl border ${conf.bg.replace('bg-', 'border-').replace('50', '200')} ${conf.bg}`}>
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className={`font-bold text-sm ${conf.text}`}>{e.title}</h4>
+                          <Icon size={16} className={conf.text} />
                         </div>
-                     );
+                        <p className="text-xs text-slate-600 font-bold flex items-center gap-1.5">
+                          <User size={12} /> {e.instructorName}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
+                          <Clock size={12} /> 09:00 - 17:00
+                        </p>
+                        {(e.location || e.clientPartner) && (
+                          <div className="mt-2 pt-2 border-t border-slate-200/50 space-y-1">
+                            {e.location && (
+                              <p className="text-[10px] text-slate-500 font-bold flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></svg>
+                                {e.location}
+                              </p>
+                            )}
+                            {e.clientPartner && (
+                              <p className="text-[10px] text-slate-500 font-bold flex items-center gap-1.5">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                                CP: {e.clientPartner}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {(e.hasKit || e.hasAssessment) && (
+                          <div className="mt-2 flex gap-2">
+                            {e.hasKit && <span className="bg-purple-100 text-purple-700 text-[9px] font-bold px-1.5 py-0.5 rounded">Kit</span>}
+                            {e.hasAssessment && <span className="bg-orange-100 text-orange-700 text-[9px] font-bold px-1.5 py-0.5 rounded">Assessment</span>}
+                          </div>
+                        )}
+                      </div>
+                    );
                   })
                 ) : (
                   <p className="text-slate-400 text-sm text-center py-8 font-medium">Bu tarihte planlanmış eğitim bulunmuyor.</p>
@@ -272,23 +305,23 @@ const InstructorCalendar: React.FC<InstructorCalendarProps> = ({
 
           {/* Instructor List */}
           <div className="bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm">
-             <h3 className="font-bold text-lg font-heading text-slate-900 mb-4">Eğitmenler</h3>
-             <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                {instructors.map(ins => (
-                  <div key={ins.id} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-xs font-black text-slate-500 shadow-sm">
-                           {ins.name.substring(0,2).toUpperCase()}
-                        </div>
-                        <div>
-                           <p className="text-xs font-bold text-slate-900">{ins.name}</p>
-                           <p className="text-[10px] text-slate-400">{ins.specialty}</p>
-                        </div>
-                     </div>
-                     <div className={`w-2 h-2 rounded-full ${ins.isOnLeave ? 'bg-rose-500' : 'bg-emerald-500'}`} title={ins.isOnLeave ? 'İzinde' : 'Aktif'}></div>
+            <h3 className="font-bold text-lg font-heading text-slate-900 mb-4">Eğitmenler</h3>
+            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              {instructors.map(ins => (
+                <div key={ins.id} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-xs font-black text-slate-500 shadow-sm">
+                      {ins.name.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">{ins.name}</p>
+                      <p className="text-[10px] text-slate-400">{ins.specialty}</p>
+                    </div>
                   </div>
-                ))}
-             </div>
+                  <div className={`w-2 h-2 rounded-full ${ins.isOnLeave ? 'bg-rose-500' : 'bg-emerald-500'}`} title={ins.isOnLeave ? 'İzinde' : 'Aktif'}></div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -301,31 +334,53 @@ const InstructorCalendar: React.FC<InstructorCalendarProps> = ({
               <button onClick={() => setIsAddModalOpen(false)}><X size={20} className="text-slate-400 hover:text-slate-900" /></button>
             </div>
             <form onSubmit={handleAddSubmit} className="p-8 space-y-5">
-               <div className="space-y-2">
-                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Başlık</label>
-                 <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="Eğitim başlığı..." required />
-               </div>
-               
-               <div className="space-y-2">
-                 <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Eğitmen</label>
-                 <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.instructorName} onChange={e => setFormData({...formData, instructorName: e.target.value})} required>
-                   <option value="">Seçiniz...</option>
-                   {instructors.map(i => <option key={i.id} value={i.name}>{i.name}</option>)}
-                 </select>
-               </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Başlık</label>
+                <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} placeholder="Eğitim başlığı..." required />
+              </div>
 
-               <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Başlangıç</label>
-                   <input type="datetime-local" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.startDate} onChange={e => setFormData({...formData, startDate: e.target.value})} required />
-                 </div>
-                 <div className="space-y-2">
-                   <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Bitiş</label>
-                   <input type="datetime-local" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} required />
-                 </div>
-               </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Eğitmen</label>
+                <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.instructorName} onChange={e => setFormData({ ...formData, instructorName: e.target.value })} required>
+                  <option value="">Seçiniz...</option>
+                  {instructors.map(i => <option key={i.id} value={i.name}>{i.name}</option>)}
+                </select>
+              </div>
 
-               <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-blue-500/30">Ekle</button>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Başlangıç</label>
+                  <input type="datetime-local" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} required />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Bitiş</label>
+                  <input type="datetime-local" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.endDate} onChange={e => setFormData({ ...formData, endDate: e.target.value })} required />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Client Partner</label>
+                  <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.clientPartner} onChange={e => setFormData({ ...formData, clientPartner: e.target.value })} placeholder="CP Adı..." />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Lokasyon</label>
+                  <input className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 outline-none focus:ring-2 focus:ring-blue-500/20" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} placeholder="Eğitim yeri..." />
+                </div>
+              </div>
+
+              <div className="flex gap-6">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input type="checkbox" className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300" checked={formData.hasKit} onChange={e => setFormData({ ...formData, hasKit: e.target.checked })} />
+                  <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900">Eğitim Kiti Var</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input type="checkbox" className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300" checked={formData.hasAssessment} onChange={e => setFormData({ ...formData, hasAssessment: e.target.checked })} />
+                  <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900">Assessment Var</span>
+                </label>
+              </div>
+
+              <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-blue-500/30">Ekle</button>
             </form>
           </div>
         </div>

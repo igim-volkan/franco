@@ -33,8 +33,12 @@ import InstructorCalendar from './components/InstructorCalendar';
 import CustomerDetail from './components/CustomerDetail';
 import Settings from './components/Settings';
 import Tasks from './components/Tasks';
+import MyPage from './components/MyPage';
 
 const App: React.FC = () => {
+  // Mock logged in user (Sarp Yılmaz)
+  const currentUserId = 'INS-001';
+
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -49,10 +53,13 @@ const App: React.FC = () => {
       email: 'arda.yilmaz@techflow.com',
       phone: '+90 532 123 45 67',
       address: 'Levent, İstanbul',
-      billingInfo: 'TechFlow Yazılım A.Ş - Vergi No: 1234567890',
+      billingAddress: 'Levent Mah. Büyükdere Cad. No:123 Şişli/İstanbul',
+      taxOffice: 'Zincirlikuyu',
+      taxNumber: '1234567890',
       sector: 'Teknoloji',
       employeeCount: 250,
       status: CustomerStatus.EXISTING,
+      ownerId: 'INS-001', // Assigned to Sarp Yılmaz
       createdAt: new Date().toISOString()
     },
     {
@@ -62,7 +69,9 @@ const App: React.FC = () => {
       email: 'selin.demir@globalfinance.com',
       phone: '+90 212 987 65 43',
       address: 'Maslak, İstanbul',
-      billingInfo: 'Global Finans Hizmetleri - Vergi No: 9876543210',
+      billingAddress: 'Maslak Mah. Meydan Sok. No:5 Sarıyer/İstanbul',
+      taxOffice: 'Maslak',
+      taxNumber: '9876543210',
       sector: 'Finans',
       employeeCount: 1200,
       status: CustomerStatus.POTENTIAL,
@@ -74,12 +83,15 @@ const App: React.FC = () => {
     {
       id: 'FRS-1001',
       customerId: 'MST-001',
-      customerName: 'TechFlow Çözümleri',
-      status: OpportunityStatus.PROPOSAL,
-      trainingType: TrainingTypeDefaults.TECHNICAL,
+      ownerId: 'INS-001', // Assigned to Sarp Yılmaz
+      customerName: 'TechFlow Yazılım',
+      status: OpportunityStatus.PROPOSAL_SENT,
+      trainingTopics: [TrainingTypeDefaults.LEADERSHIP, 'React'], // Changed to array
+      currency: 'TL',
+      priceUnit: 'Toplam',
       description: 'Frontend ekibi için React ve TypeScript İleri Seviye Eğitimi.',
       requestedDates: ['2024-06-15', '2024-06-16'],
-      amount: 15000,
+      amount: 45000, // Updated amount
       tasks: [
         { id: 'TSK-1', text: 'Teklif dokümanını hazırla', dueDate: '2024-06-10', status: TaskStatus.DONE }
       ],
@@ -94,8 +106,12 @@ const App: React.FC = () => {
       title: 'React Atölyesi - TechFlow',
       instructorName: 'Deniz Can',
       startDate: '2024-06-15T09:00:00',
-      endDate: '2024-06-15T17:00:00',
-      status: 'Planlandı'
+      endDate: '2024-06-16T17:00',
+      status: 'Planlandı',
+      clientPartner: 'Ahmet Yılmaz',
+      location: 'TechFlow Genel Merkez - Toplantı Salonu A',
+      hasKit: true,
+      hasAssessment: true
     }
   ]);
 
@@ -214,8 +230,8 @@ const App: React.FC = () => {
                   setSelectedCustomerId(null);
                 }}
                 className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group relative overflow-hidden ${isActive
-                    ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20 font-bold'
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium'
+                  ? 'bg-slate-900 text-white shadow-xl shadow-slate-900/20 font-bold'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 font-medium'
                   } ${!isSidebarOpen && 'justify-center px-0'}`}
               >
                 <div className={`shrink-0 transition-transform ${isActive ? 'scale-110' : 'group-hover:scale-110'}`}>
@@ -280,6 +296,16 @@ const App: React.FC = () => {
                 events={events}
                 globalTasks={globalTasks}
                 onViewChange={setActiveView}
+              />
+            )}
+            {activeView === 'my_page' && (
+              <MyPage
+                currentUserId={currentUserId}
+                customers={customers}
+                opportunities={opportunities}
+                events={events}
+                tasks={globalTasks}
+                instructors={instructors}
               />
             )}
             {activeView === 'crm' && <CustomerCRM customers={customers} onAddCustomer={handleAddCustomer} onViewCustomer={handleViewCustomer} />}
