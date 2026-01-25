@@ -37,6 +37,12 @@ export interface OpportunityTask {
   status: TaskStatus;
 }
 
+export interface SubTask {
+  id: string;
+  title: string;
+  isCompleted: boolean;
+}
+
 export interface GlobalTask {
   id: string;
   title: string;
@@ -46,6 +52,7 @@ export interface GlobalTask {
   dueDate: string;
   status: GlobalTaskStatus;
   priority: 'Düşük' | 'Orta' | 'Yüksek';
+  subTasks?: SubTask[];
   createdAt: string;
 }
 

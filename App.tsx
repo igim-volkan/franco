@@ -153,6 +153,14 @@ const App: React.FC = () => {
 
   const handleAddOpportunity = (newOpp: Opportunity) => {
     setOpportunities(prev => [...prev, newOpp]);
+
+    // Check if customer is potential and update to existing
+    const customer = customers.find(c => c.id === newOpp.customerId);
+    if (customer && customer.status === CustomerStatus.POTENTIAL) {
+      setCustomers(prev => prev.map(c =>
+        c.id === newOpp.customerId ? { ...c, status: CustomerStatus.EXISTING } : c
+      ));
+    }
   };
 
   const handleAddEvent = (newEvent: TrainingEvent) => {
@@ -165,6 +173,10 @@ const App: React.FC = () => {
 
   const updateGlobalTaskStatus = (id: string, status: GlobalTaskStatus) => {
     setGlobalTasks(prev => prev.map(task => task.id === id ? { ...task, status } : task));
+  };
+
+  const handleUpdateGlobalTask = (updatedTask: GlobalTask) => {
+    setGlobalTasks(prev => prev.map(task => task.id === updatedTask.id ? updatedTask : task));
   };
 
   const updateOpportunityStatus = (id: string, status: OpportunityStatus) => {
@@ -308,7 +320,14 @@ const App: React.FC = () => {
                 instructors={instructors}
               />
             )}
-            {activeView === 'crm' && <CustomerCRM customers={customers} onAddCustomer={handleAddCustomer} onViewCustomer={handleViewCustomer} />}
+            {activeView === 'crm' && (
+              <CustomerCRM
+                customers={customers}
+                instructors={instructors}
+                onAddCustomer={handleAddCustomer}
+                onViewCustomer={handleViewCustomer}
+              />
+            )}
             {activeView === 'customer_detail' && selectedCustomer && (
               <CustomerDetail
                 customer={selectedCustomer}
@@ -333,6 +352,7 @@ const App: React.FC = () => {
                 instructors={instructors}
                 onAddTask={handleAddGlobalTask}
                 onUpdateStatus={updateGlobalTaskStatus}
+                onUpdateTask={handleUpdateGlobalTask}
               />
             )}
             {activeView === 'calendar' && (

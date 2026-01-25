@@ -22,12 +22,14 @@ import {
   Globe,
   MoreHorizontal,
   Target,   // Added import
-  History   // Added import
+  History,   // Added import
+  Crown // Added import
 } from 'lucide-react';
-import { Customer, CustomerStatus } from '../types';
+import { Customer, CustomerStatus, Instructor } from '../types';
 
 interface CustomerCRMProps {
   customers: Customer[];
+  instructors: Instructor[]; // Added instructors prop
   onAddCustomer: (customer: Customer) => void;
   onViewCustomer: (customerId: string) => void;
 }
@@ -45,7 +47,7 @@ const getRandomGradient = (name: string) => {
   return gradients[index];
 };
 
-const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onViewCustomer }) => {
+const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, instructors, onAddCustomer, onViewCustomer }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<CustomerStatus>(CustomerStatus.EXISTING); // Added tab state
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,7 +65,8 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
     taxNumber: '',
     sector: '',
     employeeCount: '',
-    status: CustomerStatus.POTENTIAL // Default to POTENTIAL for new customers
+    status: CustomerStatus.POTENTIAL, // Default to POTENTIAL for new customers
+    ownerId: ''
   });
 
   const uniqueSectors = useMemo(() => {
@@ -88,6 +91,7 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
       sector: formData.sector,
       employeeCount: parseInt(formData.employeeCount) || 0,
       status: formData.status,
+      ownerId: formData.ownerId || undefined,
       createdAt: new Date().toISOString()
     };
 
@@ -109,7 +113,8 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
       taxNumber: '',
       sector: '',
       employeeCount: '',
-      status: CustomerStatus.POTENTIAL
+      status: CustomerStatus.POTENTIAL,
+      ownerId: ''
     });
   };
 
@@ -131,6 +136,24 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+      {/* Instructor Stats Bar */}
+      <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
+        {instructors.map(ins => {
+          const count = customers.filter(c => c.ownerId === ins.id).length;
+          return (
+            <div key={ins.id} className="bg-white p-3 rounded-2xl border border-slate-200 flex items-center gap-3 min-w-[200px] shadow-sm">
+              <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-sm">
+                {ins.name.split(' ').map(n => n[0]).join('')}
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-tight">{ins.name}</p>
+                <p className="text-sm font-bold text-slate-900">{count} Müşteri</p>
+              </div>
+            </div>
+          )
+        })}
+      </div>
 
       {/* Top Header & Actions */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -295,6 +318,15 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
                     <Users2 size={12} /> {customer.employeeCount.toLocaleString()}
                   </span>
                 </div>
+
+                {customer.ownerId && (
+                  <div className="mt-4 pt-4 border-t border-slate-50 flex items-center gap-2">
+                    <Crown size={14} className="text-amber-500" />
+                    <span className="text-xs font-bold text-slate-600">
+                      Temsilci: <span className="text-slate-900">{instructors.find(i => i.id === customer.ownerId)?.name || 'Bilinmiyor'}</span>
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="pt-6 border-t border-slate-50 flex items-center justify-between gap-2">
@@ -341,6 +373,7 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
                 <th className="px-8 py-5">Şirket</th>
                 <th className="px-6 py-5">Sektör</th>
                 <th className="px-6 py-5">İlgili Kişi</th>
+                <th className="px-6 py-5">Temsilci</th>
                 <th className="px-6 py-5">İletişim</th>
                 <th className="px-6 py-5 text-right">İşlem</th>
               </tr>
@@ -388,239 +421,260 @@ const CustomerCRM: React.FC<CustomerCRMProps> = ({ customers, onAddCustomer, onV
             </tbody>
           </table>
         </div>
-      )}
+      )
+      }
 
       {/* Modern Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-white/20">
-            {/* Modal Header */}
-            <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
-                  <Building2 size={24} />
+      {
+        isModalOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+            <div className="bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-white/20">
+              {/* Modal Header */}
+              <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                    <Building2 size={24} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-slate-900 font-heading">Yeni Müşteri</h2>
+                    <p className="text-slate-500 text-xs font-bold mt-0.5 uppercase tracking-wide">Kurumsal Kayıt Formu</p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-xl font-black text-slate-900 font-heading">Yeni Müşteri</h2>
-                  <p className="text-slate-500 text-xs font-bold mt-0.5 uppercase tracking-wide">Kurumsal Kayıt Formu</p>
-                </div>
-              </div>
-              <button
-                onClick={closeModal}
-                className="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-white rounded-full shadow-sm transition-all border border-transparent hover:border-slate-100"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Modal Body / Form */}
-            <form onSubmit={handleSubmit} className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
-              <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
                 <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, status: CustomerStatus.POTENTIAL })}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${formData.status === CustomerStatus.POTENTIAL
-                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-black/5'
-                    : 'text-slate-500 hover:text-slate-700'
-                    }`}
+                  onClick={closeModal}
+                  className="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-white rounded-full shadow-sm transition-all border border-transparent hover:border-slate-100"
                 >
-                  <Target size={16} />
-                  Potansiyel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData({ ...formData, status: CustomerStatus.EXISTING })}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${formData.status === CustomerStatus.EXISTING
-                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-black/5'
-                    : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                >
-                  <History size={16} />
-                  Mevcut
+                  <X size={20} />
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
-                {/* Şirket Adı */}
-                <div className="col-span-2 space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <Globe size={12} className="text-blue-500" />
-                    Şirket / Müşteri Adı
-                  </label>
-                  <input
-                    required
-                    autoFocus
-                    type="text"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900 placeholder:text-slate-300 placeholder:font-normal"
-                    placeholder="Örn: FranCo Eğitim Hizmetleri A.Ş."
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
+              {/* Modal Body / Form */}
+              <form onSubmit={handleSubmit} className="p-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <div className="flex bg-slate-100 p-1 rounded-xl mb-6">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, status: CustomerStatus.POTENTIAL })}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${formData.status === CustomerStatus.POTENTIAL
+                      ? 'bg-white text-slate-900 shadow-sm ring-1 ring-black/5'
+                      : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                  >
+                    <Target size={16} />
+                    Potansiyel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, status: CustomerStatus.EXISTING })}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${formData.status === CustomerStatus.EXISTING
+                      ? 'bg-white text-slate-900 shadow-sm ring-1 ring-black/5'
+                      : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                  >
+                    <History size={16} />
+                    Mevcut
+                  </button>
                 </div>
 
-                {/* İlgili Kişi */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <User size={12} className="text-blue-500" />
-                    Kontak Kişisi
-                  </label>
-                  <input
-                    required
-                    type="text"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
-                    placeholder="Ad Soyad"
-                    value={formData.contactPerson}
-                    onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
-                  />
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+                  {/* Şirket Adı */}
+                  <div className="col-span-2 space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <Globe size={12} className="text-blue-500" />
+                      Şirket / Müşteri Adı
+                    </label>
+                    <input
+                      required
+                      autoFocus
+                      type="text"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900 placeholder:text-slate-300 placeholder:font-normal"
+                      placeholder="Örn: FranCo Eğitim Hizmetleri A.Ş."
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
 
-                {/* Sektör */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <Briefcase size={12} className="text-blue-500" />
-                    Sektör
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
-                    placeholder="Örn: Teknoloji"
-                    value={formData.sector}
-                    onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
-                  />
-                </div>
+                  {/* Temsilci Seçimi */}
+                  <div className="col-span-2 space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <Crown size={12} className="text-amber-500" />
+                      Müşteri Temsilcisi
+                    </label>
+                    <select
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900"
+                      value={formData.ownerId}
+                      onChange={(e) => setFormData({ ...formData, ownerId: e.target.value })}
+                    >
+                      <option value="">Temsilci Seçiniz...</option>
+                      {instructors.map(ins => (
+                        <option key={ins.id} value={ins.id}>{ins.name}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                {/* E-posta */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <Mail size={12} className="text-blue-500" />
-                    E-posta
-                  </label>
-                  <input
-                    type="email"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
-                    placeholder="ornek@sirket.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  />
-                </div>
+                  {/* İlgili Kişi */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <User size={12} className="text-blue-500" />
+                      Kontak Kişisi
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
+                      placeholder="Ad Soyad"
+                      value={formData.contactPerson}
+                      onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
+                    />
+                  </div>
 
-                {/* Telefon */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <Phone size={12} className="text-blue-500" />
-                    Telefon
-                  </label>
-                  <input
-                    type="tel"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
-                    placeholder="+90 5XX..."
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  />
-                </div>
+                  {/* Sektör */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <Briefcase size={12} className="text-blue-500" />
+                      Sektör
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
+                      placeholder="Örn: Teknoloji"
+                      value={formData.sector}
+                      onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
+                    />
+                  </div>
 
-                {/* Çalışan Sayısı */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <Users2 size={12} className="text-blue-500" />
-                    Ölçek (Çalışan)
-                  </label>
-                  <input
-                    type="number"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
-                    placeholder="Örn: 250"
-                    value={formData.employeeCount}
-                    onChange={(e) => setFormData({ ...formData, employeeCount: e.target.value })}
-                  />
-                </div>
+                  {/* E-posta */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <Mail size={12} className="text-blue-500" />
+                      E-posta
+                    </label>
+                    <input
+                      type="email"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
+                      placeholder="ornek@sirket.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    />
+                  </div>
 
-                {/* Adres */}
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <MapPin size={12} className="text-blue-500" />
-                    Lokasyon / Adres
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
-                    placeholder="Tam adres..."
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  />
-                </div>
+                  {/* Telefon */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <Phone size={12} className="text-blue-500" />
+                      Telefon
+                    </label>
+                    <input
+                      type="tel"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
+                      placeholder="+90 5XX..."
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    />
+                  </div>
 
-                {/* Fatura Bilgileri */}
-                {/* Fatura Bilgileri - Divided into 3 fields */}
-                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Fatura Adresi */}
+                  {/* Çalışan Sayısı */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                      <Users2 size={12} className="text-blue-500" />
+                      Ölçek (Çalışan)
+                    </label>
+                    <input
+                      type="number"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
+                      placeholder="Örn: 250"
+                      value={formData.employeeCount}
+                      onChange={(e) => setFormData({ ...formData, employeeCount: e.target.value })}
+                    />
+                  </div>
+
+                  {/* Adres */}
                   <div className="md:col-span-2 space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                      <CreditCard size={12} className="text-blue-500" />
-                      Fatura Adresi
-                    </label>
-                    <textarea
-                      rows={2}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none font-medium"
-                      placeholder="Tam fatura adresi..."
-                      value={formData.billingAddress}
-                      onChange={(e) => setFormData({ ...formData, billingAddress: e.target.value })}
-                    />
-                  </div>
-
-                  {/* Vergi Dairesi */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                      <Building2 size={12} className="text-blue-500" />
-                      Vergi Dairesi
+                      <MapPin size={12} className="text-blue-500" />
+                      Lokasyon / Adres
                     </label>
                     <input
                       type="text"
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
-                      placeholder="Örn: Zincirlikuyu"
-                      value={formData.taxOffice}
-                      onChange={(e) => setFormData({ ...formData, taxOffice: e.target.value })}
+                      placeholder="Tam adres..."
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     />
                   </div>
 
-                  {/* Vergi No */}
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                      <CreditCard size={12} className="text-blue-500" />
-                      Vergi Numarası
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
-                      placeholder="10 haneli vergi no"
-                      value={formData.taxNumber}
-                      onChange={(e) => setFormData({ ...formData, taxNumber: e.target.value })}
-                    />
+                  {/* Fatura Bilgileri */}
+                  {/* Fatura Bilgileri - Divided into 3 fields */}
+                  <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Fatura Adresi */}
+                    <div className="md:col-span-2 space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <CreditCard size={12} className="text-blue-500" />
+                        Fatura Adresi
+                      </label>
+                      <textarea
+                        rows={2}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none font-medium"
+                        placeholder="Tam fatura adresi..."
+                        value={formData.billingAddress}
+                        onChange={(e) => setFormData({ ...formData, billingAddress: e.target.value })}
+                      />
+                    </div>
+
+                    {/* Vergi Dairesi */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <Building2 size={12} className="text-blue-500" />
+                        Vergi Dairesi
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
+                        placeholder="Örn: Zincirlikuyu"
+                        value={formData.taxOffice}
+                        onChange={(e) => setFormData({ ...formData, taxOffice: e.target.value })}
+                      />
+                    </div>
+
+                    {/* Vergi No */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        <CreditCard size={12} className="text-blue-500" />
+                        Vergi Numarası
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium"
+                        placeholder="10 haneli vergi no"
+                        value={formData.taxNumber}
+                        onChange={(e) => setFormData({ ...formData, taxNumber: e.target.value })}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Modal Footer / Actions */}
-              <div className="mt-8 flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="px-6 py-3 border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all uppercase text-xs tracking-widest"
-                >
-                  Vazgeç
-                </button>
-                <button
-                  type="submit"
-                  className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 active:scale-[0.98] uppercase text-xs tracking-widest flex items-center gap-2"
-                >
-                  <Plus size={16} />
-                  Müşteriyi Kaydet
-                </button>
-              </div>
-            </form>
+                {/* Modal Footer / Actions */}
+                <div className="mt-8 flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    className="px-6 py-3 border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all uppercase text-xs tracking-widest"
+                  >
+                    Vazgeç
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 active:scale-[0.98] uppercase text-xs tracking-widest flex items-center gap-2"
+                  >
+                    <Plus size={16} />
+                    Müşteriyi Kaydet
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 

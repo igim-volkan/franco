@@ -1,25 +1,32 @@
 
 import React, { useState, useMemo } from 'react';
-import { 
-  Plus, 
-  Search, 
-  X, 
-  CheckCircle2, 
-  User, 
+import {
+  Plus,
+  Search,
+  X,
+  CheckCircle2,
+  User,
   Calendar,
-  ListTodo
+  ListTodo,
+  Edit,
+  Trash2,
+  PlusCircle,
+  LayoutList,
+  Check
 } from 'lucide-react';
-import { GlobalTask, GlobalTaskStatus, Instructor } from '../types';
+import { GlobalTask, GlobalTaskStatus, Instructor, SubTask } from '../types';
 
 interface TasksProps {
   tasks: GlobalTask[];
   instructors: Instructor[];
   onAddTask: (task: GlobalTask) => void;
   onUpdateStatus: (id: string, status: GlobalTaskStatus) => void;
+  onUpdateTask: (task: GlobalTask) => void;
 }
 
-const Tasks: React.FC<TasksProps> = ({ tasks, instructors, onAddTask, onUpdateStatus }) => {
+const Tasks: React.FC<TasksProps> = ({ tasks, instructors, onAddTask, onUpdateStatus, onUpdateTask }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<GlobalTaskStatus | 'Tümü'>('Tümü');
   const [assignedToFilter, setAssignedToFilter] = useState<string>('Hepsi');
   const [dateSortOrder, setDateSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -32,12 +39,14 @@ const Tasks: React.FC<TasksProps> = ({ tasks, instructors, onAddTask, onUpdateSt
     assignedTo: string;
     dueDate: string;
     priority: 'Düşük' | 'Orta' | 'Yüksek';
+    subTasks: SubTask[];
   }>({
     title: '',
     description: '',
     assignedTo: 'Yönetici',
     dueDate: '',
-    priority: 'Orta'
+    priority: 'Orta',
+    subTasks: []
   });
 
   // Unique list of assignees for the filter
@@ -50,8 +59,8 @@ const Tasks: React.FC<TasksProps> = ({ tasks, instructors, onAddTask, onUpdateSt
     let result = tasks.filter(task => {
       const matchesStatus = statusFilter === 'Tümü' || task.status === statusFilter;
       const matchesAssignee = assignedToFilter === 'Hepsi' || task.assignedTo === assignedToFilter;
-      const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            task.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        task.description.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesStatus && matchesAssignee && matchesSearch;
     });
 
@@ -69,21 +78,90 @@ const Tasks: React.FC<TasksProps> = ({ tasks, instructors, onAddTask, onUpdateSt
     e.preventDefault();
     if (!formData.title || !formData.dueDate) return;
 
-    const newTask: GlobalTask = {
-      id: `G-TSK-${Math.floor(1000 + Math.random() * 9000)}`,
-      title: formData.title,
-      description: formData.description,
-      assignedTo: formData.assignedTo,
-      assignedBy: 'Yönetici',
-      dueDate: formData.dueDate,
-      status: GlobalTaskStatus.PENDING,
-      priority: formData.priority,
-      createdAt: new Date().toISOString()
-    };
+    if (editingTaskId) {
+      // Update existing task
+      const taskToUpdate = tasks.find(t => t.id === editingTaskId);
+      if (taskToUpdate) {
+        onUpdateTask({
+          ...taskToUpdate,
+          title: formData.title,
+          description: formData.description,
+          assignedTo: formData.assignedTo,
+          dueDate: formData.dueDate,
+          priority: formData.priority,
+          subTasks: formData.subTasks
+        });
+      }
+    } else {
+      // Create new task
+      const newTask: GlobalTask = {
+        id: `G-TSK-${Math.floor(1000 + Math.random() * 9000)}`,
+        title: formData.title,
+        description: formData.description,
+        assignedTo: formData.assignedTo,
+        assignedBy: 'Yönetici',
+        dueDate: formData.dueDate,
+        status: GlobalTaskStatus.PENDING,
+        priority: formData.priority,
+        subTasks: formData.subTasks,
+        createdAt: new Date().toISOString()
+      };
+      onAddTask(newTask);
+    }
 
-    onAddTask(newTask);
     setIsModalOpen(false);
-    setFormData({ title: '', description: '', assignedTo: 'Yönetici', dueDate: '', priority: 'Orta' });
+    setEditingTaskId(null);
+    setFormData({ title: '', description: '', assignedTo: 'Yönetici', dueDate: '', priority: 'Orta', subTasks: [] });
+  };
+
+  const handleEditClick = (task: GlobalTask) => {
+    setEditingTaskId(task.id);
+    setFormData({
+      title: task.title,
+      description: task.description,
+      assignedTo: task.assignedTo,
+      dueDate: task.dueDate,
+      priority: task.priority,
+      subTasks: task.subTasks || []
+    });
+    setIsModalOpen(true);
+  };
+
+  const addSubTask = () => {
+    const newSubTask: SubTask = {
+      id: `ST-${Date.now()}`,
+      title: '',
+      isCompleted: false
+    };
+    setFormData({ ...formData, subTasks: [...formData.subTasks, newSubTask] });
+  };
+
+  const updateSubTaskTitle = (id: string, title: string) => {
+    setFormData({
+      ...formData,
+      subTasks: formData.subTasks.map(st => st.id === id ? { ...st, title } : st)
+    });
+  };
+
+  const removeSubTask = (id: string) => {
+    setFormData({
+      ...formData,
+      subTasks: formData.subTasks.filter(st => st.id !== id)
+    });
+  };
+
+  const toggleTaskSubTask = (taskId: string, subTaskId: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || !task.subTasks) return;
+
+    const updatedSubTasks = task.subTasks.map(st =>
+      st.id === subTaskId ? { ...st, isCompleted: !st.isCompleted } : st
+    );
+
+    onUpdateTask({
+      ...task,
+      subTasks: updatedSubTasks
+    });
   };
 
   const getPriorityColor = (priority: string) => {
@@ -102,99 +180,133 @@ const Tasks: React.FC<TasksProps> = ({ tasks, instructors, onAddTask, onUpdateSt
           <h1 className="text-3xl font-black font-heading text-slate-900 tracking-tight">Operasyonel Görevler</h1>
           <p className="text-slate-500 mt-2 font-medium">Ekip içi atamaları ve iş akışını yönetin.</p>
         </div>
-        <button 
+        <button
           onClick={() => setIsModalOpen(true)}
           className="group flex items-center justify-center gap-2 bg-slate-900 text-white px-6 py-3.5 rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 active:scale-95 uppercase text-xs tracking-widest"
         >
           <Plus size={18} className="group-hover:rotate-90 transition-transform" />
-          <span>Yeni Görev</span>
+          <span>Yeni Görev Ekle</span>
         </button>
       </div>
 
       <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden p-8">
         {/* Filter Controls Bar */}
         <div className="flex flex-col xl:flex-row items-center justify-between gap-6 mb-8">
-           <div className="relative w-full xl:max-w-md group">
-             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
-             <input 
-               type="text" 
-               placeholder="Görevlerde ara..." 
-               className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm"
-               value={searchQuery}
-               onChange={(e) => setSearchQuery(e.target.value)}
-             />
-           </div>
+          <div className="relative w-full xl:max-w-md group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
+            <input
+              type="text"
+              placeholder="Görevlerde ara..."
+              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-medium focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
 
-           <div className="flex flex-wrap items-center gap-4 w-full xl:w-auto">
-              <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
-                {['Tümü', GlobalTaskStatus.PENDING, GlobalTaskStatus.COMPLETED].map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setStatusFilter(f as any)}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all uppercase tracking-wide ${
-                      statusFilter === f ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+          <div className="flex flex-wrap items-center gap-4 w-full xl:w-auto">
+            <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+              {['Tümü', GlobalTaskStatus.PENDING, GlobalTaskStatus.COMPLETED].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setStatusFilter(f as any)}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all uppercase tracking-wide ${statusFilter === f ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                     }`}
-                  >
-                    {f === GlobalTaskStatus.PENDING ? 'Bekleyen' : f === GlobalTaskStatus.COMPLETED ? 'Tamamlanan' : 'Tümü'}
-                  </button>
-                ))}
-              </div>
+                >
+                  {f === GlobalTaskStatus.PENDING ? 'Bekleyen' : f === GlobalTaskStatus.COMPLETED ? 'Tamamlanan' : 'Tümü'}
+                </button>
+              ))}
+            </div>
 
-              <select 
-                value={assignedToFilter}
-                onChange={(e) => setAssignedToFilter(e.target.value)}
-                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-500/10 cursor-pointer"
-              >
-                <option value="Hepsi">Tüm Sorumlular</option>
-                <option value="Yönetici">Yönetici</option>
-                {assignees.filter(a => a !== 'Yönetici').map(a => (
-                  <option key={a} value={a}>{a}</option>
-                ))}
-              </select>
-           </div>
+            <select
+              value={assignedToFilter}
+              onChange={(e) => setAssignedToFilter(e.target.value)}
+              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-500/10 cursor-pointer"
+            >
+              <option value="Hepsi">Tüm Sorumlular</option>
+              <option value="Yönetici">Yönetici</option>
+              {assignees.filter(a => a !== 'Yönetici').map(a => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4">
           {filteredAndSortedTasks.length > 0 ? filteredAndSortedTasks.map((task) => (
             <div key={task.id} className="p-6 rounded-3xl border border-slate-100 hover:border-blue-200 hover:bg-slate-50/50 hover:shadow-lg hover:shadow-blue-900/5 transition-all duration-300 group">
               <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-                 {/* Checkbox */}
-                 <button 
-                    onClick={() => onUpdateStatus(task.id, task.status === GlobalTaskStatus.PENDING ? GlobalTaskStatus.COMPLETED : GlobalTaskStatus.PENDING)}
-                    className={`flex-shrink-0 w-12 h-12 rounded-2xl border-2 flex items-center justify-center transition-all ${
-                      task.status === GlobalTaskStatus.COMPLETED 
-                        ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/30' 
-                        : 'border-slate-200 bg-white text-transparent hover:border-blue-400'
+                {/* Checkbox */}
+                <button
+                  onClick={() => onUpdateStatus(task.id, task.status === GlobalTaskStatus.PENDING ? GlobalTaskStatus.COMPLETED : GlobalTaskStatus.PENDING)}
+                  className={`flex-shrink-0 w-12 h-12 rounded-2xl border-2 flex items-center justify-center transition-all ${task.status === GlobalTaskStatus.COMPLETED
+                    ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                    : 'border-slate-200 bg-white text-transparent hover:border-blue-400'
                     }`}
+                >
+                  <CheckCircle2 size={24} strokeWidth={3} />
+                </button>
+
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${getPriorityColor(task.priority)}`}>
+                      {task.priority}
+                    </span>
+                    <h3 className={`font-bold text-lg text-slate-900 font-heading transition-all ${task.status === GlobalTaskStatus.COMPLETED ? 'line-through text-slate-400' : ''}`}>
+                      {task.title}
+                    </h3>
+                  </div>
+                  <p className={`text-sm font-medium ${task.status === GlobalTaskStatus.COMPLETED ? 'text-slate-300' : 'text-slate-500'}`}>
+                    {task.description}
+                  </p>
+
+                  {/* Subtasks */}
+                  {task.subTasks && task.subTasks.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center gap-2 mb-2">
+                        <LayoutList size={14} className="text-slate-400" />
+                        <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">Alt Görevler</span>
+                      </div>
+                      {task.subTasks.map(st => (
+                        <div key={st.id} className="flex items-start gap-2 group/subtask">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleTaskSubTask(task.id, st.id);
+                            }}
+                            className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-all ${st.isCompleted
+                              ? 'bg-blue-500 border-blue-500 text-white'
+                              : 'border-slate-300 bg-white hover:border-blue-400'
+                              }`}
+                          >
+                            {st.isCompleted && <Check size={10} strokeWidth={4} />}
+                          </button>
+                          <span className={`text-xs font-medium transition-all ${st.isCompleted ? 'text-slate-400 line-through' : 'text-slate-600'}`}>
+                            {st.title}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Meta Info */}
+                <div className="flex flex-row md:flex-col items-center md:items-end gap-4 md:gap-2 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-slate-100">
+                  <button
+                    onClick={() => handleEditClick(task)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors mb-2"
                   >
-                    <CheckCircle2 size={24} strokeWidth={3} />
+                    <Edit size={12} />
+                    <span className="text-xs font-bold">Düzenle</span>
                   </button>
-
-                  <div className="flex-1 space-y-2">
-                     <div className="flex items-center gap-3 flex-wrap">
-                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${getPriorityColor(task.priority)}`}>
-                          {task.priority}
-                        </span>
-                        <h3 className={`font-bold text-lg text-slate-900 font-heading transition-all ${task.status === GlobalTaskStatus.COMPLETED ? 'line-through text-slate-400' : ''}`}>
-                          {task.title}
-                        </h3>
-                     </div>
-                     <p className={`text-sm font-medium ${task.status === GlobalTaskStatus.COMPLETED ? 'text-slate-300' : 'text-slate-500'}`}>
-                       {task.description}
-                     </p>
+                  <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
+                    <User size={12} className="text-slate-500" />
+                    <span className="text-xs font-bold text-slate-700">{task.assignedTo}</span>
                   </div>
-
-                  {/* Meta Info */}
-                  <div className="flex flex-row md:flex-col items-center md:items-end gap-4 md:gap-2 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-slate-100">
-                     <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
-                        <User size={12} className="text-slate-500" />
-                        <span className="text-xs font-bold text-slate-700">{task.assignedTo}</span>
-                     </div>
-                     <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
-                        <Calendar size={12} className="text-slate-500" />
-                        <span className="text-xs font-bold text-slate-700">{task.dueDate}</span>
-                     </div>
+                  <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
+                    <Calendar size={12} className="text-slate-500" />
+                    <span className="text-xs font-bold text-slate-700">{task.dueDate}</span>
                   </div>
+                </div>
               </div>
             </div>
           )) : (
@@ -204,7 +316,7 @@ const Tasks: React.FC<TasksProps> = ({ tasks, instructors, onAddTask, onUpdateSt
               </div>
               <p className="text-slate-900 font-bold text-lg">Görev Bulunamadı</p>
               <p className="text-slate-500 mt-1 max-w-xs mx-auto">Arama kriterlerinize uygun bir kayıt yok. Yeni bir görev oluşturmayı deneyin.</p>
-              <button 
+              <button
                 onClick={() => { setStatusFilter('Tümü'); setAssignedToFilter('Hepsi'); setSearchQuery(''); }}
                 className="mt-6 px-6 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all"
               >
@@ -221,13 +333,13 @@ const Tasks: React.FC<TasksProps> = ({ tasks, instructors, onAddTask, onUpdateSt
           <div className="bg-white rounded-[2rem] w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 border border-white/20">
             <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
-                    <ListTodo size={24} />
-                 </div>
-                 <div>
-                   <h2 className="text-xl font-black text-slate-900 font-heading">Yeni Görev</h2>
-                   <p className="text-slate-500 text-xs font-bold mt-0.5 uppercase tracking-wide">Ekip İçi Atama</p>
-                 </div>
+                <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                  <ListTodo size={24} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 font-heading">{editingTaskId ? 'Görevi Düzenle' : 'Yeni Görev'}</h2>
+                  <p className="text-slate-500 text-xs font-bold mt-0.5 uppercase tracking-wide">Ekip İçi Atama</p>
+                </div>
               </div>
               <button onClick={() => setIsModalOpen(false)} className="p-2.5 text-slate-400 hover:text-slate-900 hover:bg-white rounded-full transition-all border border-transparent hover:border-slate-100">
                 <X size={20} />
@@ -237,35 +349,35 @@ const Tasks: React.FC<TasksProps> = ({ tasks, instructors, onAddTask, onUpdateSt
             <form onSubmit={handleSubmit} className="p-8 space-y-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Görev Başlığı</label>
-                <input 
+                <input
                   required
                   autoFocus
-                  type="text" 
+                  type="text"
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900"
                   placeholder="Örn: Müşteri memnuniyet anketini tamamla"
                   value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 />
               </div>
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Açıklama</label>
-                <textarea 
+                <textarea
                   rows={3}
                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none font-medium text-sm"
                   placeholder="Görevin detaylarını buraya yazın..."
                   value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Sorumlu Kişi</label>
-                  <select 
+                  <select
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900"
                     value={formData.assignedTo}
-                    onChange={(e) => setFormData({...formData, assignedTo: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
                   >
                     <option value="Yönetici">Yönetici (Ben)</option>
                     {instructors.map(ins => (
@@ -275,12 +387,12 @@ const Tasks: React.FC<TasksProps> = ({ tasks, instructors, onAddTask, onUpdateSt
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Termin Tarihi</label>
-                  <input 
+                  <input
                     required
-                    type="date" 
+                    type="date"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900"
                     value={formData.dueDate}
-                    onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                   />
                 </div>
               </div>
@@ -292,14 +404,13 @@ const Tasks: React.FC<TasksProps> = ({ tasks, instructors, onAddTask, onUpdateSt
                     <button
                       key={p}
                       type="button"
-                      onClick={() => setFormData({...formData, priority: p as 'Düşük' | 'Orta' | 'Yüksek'})}
-                      className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${
-                        formData.priority === p 
-                          ? (p === 'Yüksek' ? 'bg-rose-500 border-rose-500 text-white shadow-lg shadow-rose-500/30' : 
-                             p === 'Orta' ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/30' : 
-                             'bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-500/30')
-                          : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
-                      }`}
+                      onClick={() => setFormData({ ...formData, priority: p as 'Düşük' | 'Orta' | 'Yüksek' })}
+                      className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all ${formData.priority === p
+                        ? (p === 'Yüksek' ? 'bg-rose-500 border-rose-500 text-white shadow-lg shadow-rose-500/30' :
+                          p === 'Orta' ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/30' :
+                            'bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-500/30')
+                        : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
+                        }`}
                     >
                       {p}
                     </button>
@@ -307,27 +418,69 @@ const Tasks: React.FC<TasksProps> = ({ tasks, instructors, onAddTask, onUpdateSt
                 </div>
               </div>
 
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">Alt Görevler</label>
+                  <button
+                    type="button"
+                    onClick={addSubTask}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                  >
+                    <PlusCircle size={14} />
+                    Alt Görev Ekle
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {formData.subTasks.map((subTask) => (
+                    <div key={subTask.id} className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
+                      <input
+                        type="text"
+                        value={subTask.title}
+                        onChange={(e) => updateSubTaskTitle(subTask.id, e.target.value)}
+                        placeholder="Alt görev açıklaması..."
+                        className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeSubTask(subTask.id)}
+                        className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                  {formData.subTasks.length === 0 && (
+                    <div className="text-center py-4 border-2 border-dashed border-slate-100 rounded-xl bg-slate-50/50">
+                      <p className="text-xs text-slate-400 font-medium">Henüz alt görev eklenmemiş</p>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
               <div className="pt-6 flex items-center justify-end gap-3 border-t border-slate-100">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setIsModalOpen(false)}
                   className="px-6 py-3 border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all uppercase text-xs tracking-widest"
                 >
                   Vazgeç
                 </button>
-                <button 
+                <button
                   type="submit"
                   className="px-8 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 active:scale-95 uppercase text-xs tracking-widest flex items-center gap-2"
                 >
                   <Plus size={16} />
-                  Görevi Ata
+                  {editingTaskId ? 'Değişiklikleri Kaydet' : 'Görevi Ata'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div >
       )}
-    </div>
+    </div >
   );
 };
 
