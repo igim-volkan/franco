@@ -138,9 +138,9 @@ const MyPage: React.FC<MyPageProps> = ({
                                             <div>
                                                 <h4 className="font-bold text-slate-900 group-hover:text-blue-700 transition-colors">{opp.customerName}</h4>
                                                 <div className="flex flex-wrap gap-2 mt-1">
-                                                    {opp.trainingTopics.map(t => (
-                                                        <span key={t} className="text-xs font-medium px-2 py-0.5 rounded text-slate-600 bg-slate-200">
-                                                            {t}
+                                                    {opp.trainingDetails.map(d => (
+                                                        <span key={d.topic} className="text-xs font-medium px-2 py-0.5 rounded text-slate-600 bg-slate-200">
+                                                            {d.topic}
                                                         </span>
                                                     ))}
                                                     <span className="text-xs text-slate-400 flex items-center">•</span>

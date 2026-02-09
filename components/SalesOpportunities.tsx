@@ -18,7 +18,8 @@ import {
   ChevronRight,
   TrendingUp,
   BrainCircuit,
-  Pencil
+  Pencil,
+  User // Added User icon
 } from 'lucide-react';
 import { Opportunity, Customer, OpportunityStatus, OpportunityTask, TaskStatus } from '../types';
 import { STATUS_STEPS } from '../constants';
@@ -120,12 +121,25 @@ const SalesOpportunities: React.FC<SalesOpportunitiesProps> = ({
 
   const [formData, setFormData] = useState({
     customerId: '',
-    trainingTopics: [] as string[], // Changed to array
+    trainingDetails: [] as {
+      topic: string;
+      price: number;
+      format: 'Eğitim' | 'Webinar' | 'Grup Koçluğu' | 'Seminer/Keynote' | 'Workshop'
+    }[],
     currency: 'TL' as 'TL' | 'USD' | 'EUR',
     priceUnit: 'Günlük' as 'Toplam' | 'Günlük' | 'Saatlik',
-    amount: '',
+    contactPerson: {
+      name: '',
+      title: '',
+      email: '',
+      phone: ''
+    },
+    // amount is now calculated automatically
     description: '',
-    dateRequest: ''
+    title: '',
+    participantGroup: '',
+    estimatedCloseDate: '',
+    createdAt: new Date().toISOString().split('T')[0]
   });
 
   const handleGenerateOutline = async (opp: Opportunity) => {
@@ -142,7 +156,7 @@ const SalesOpportunities: React.FC<SalesOpportunitiesProps> = ({
         model: 'gemini-2.0-flash-exp',
         contents: `Eğitim Şirketi için bir taslak oluştur.
         Müşteri: ${opp.customerName}
-        Konu: ${opp.trainingTopics.join(', ')}
+        Konu: ${opp.trainingDetails.map(d => d.topic).join(', ')}
         Notlar: ${opp.description}
         
         Lütfen 3 maddelik kısa bir eğitim içeriği önerisi ve 2 adet satış odaklı "kazanım" maddesi yaz.`,
@@ -159,31 +173,45 @@ const SalesOpportunities: React.FC<SalesOpportunitiesProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const customer = customers.find(c => c.id === formData.customerId);
+    const totalAmount = formData.trainingDetails.reduce((sum, item) => sum + item.price, 0);
+
     const newOpp: Opportunity = {
       id: `FRS-${Math.floor(1000 + Math.random() * 9000)}`,
       customerId: formData.customerId,
       customerName: customer?.name || 'Bilinmiyor',
       status: OpportunityStatus.PROPOSAL_SENT,
 
-      trainingTopics: formData.trainingTopics,
+      trainingDetails: formData.trainingDetails,
       currency: formData.currency,
       priceUnit: formData.priceUnit,
-      amount: parseFloat(formData.amount) || 0,
+      amount: totalAmount,
+      contactPerson: formData.contactPerson,
       description: formData.description,
-      requestedDates: formData.dateRequest ? [formData.dateRequest] : [],
+      requestedDates: [],
+      title: formData.title,
+      participantGroup: formData.participantGroup,
+      estimatedCloseDate: formData.estimatedCloseDate,
       tasks: [],
-      createdAt: new Date().toISOString()
+      createdAt: formData.createdAt || new Date().toISOString()
     };
     onAddOpportunity(newOpp);
     setIsModalOpen(false);
     setFormData({
       customerId: '',
-      trainingTopics: [],
+      title: '',
+      participantGroup: '',
+      estimatedCloseDate: '',
+      createdAt: new Date().toISOString().split('T')[0],
+      trainingDetails: [],
       currency: 'TL',
       priceUnit: 'Günlük',
-      amount: '',
-      description: '',
-      dateRequest: ''
+      contactPerson: {
+        name: '',
+        title: '',
+        email: '',
+        phone: ''
+      },
+      description: ''
     });
   };
 
@@ -270,9 +298,9 @@ const SalesOpportunities: React.FC<SalesOpportunitiesProps> = ({
                     <div className="flex items-center gap-3">
                       <span className="bg-slate-100 text-slate-500 text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest border border-slate-200">{opp.id}</span>
                       <div className="flex flex-wrap gap-2">
-                        {opp.trainingTopics.map(topic => (
-                          <span key={topic} className="bg-blue-50 text-blue-600 text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest border border-blue-100 flex items-center gap-1">
-                            <TrendingUp size={12} /> {topic}
+                        {opp.trainingDetails.map((detail, idx) => (
+                          <span key={idx} className="bg-blue-50 text-blue-600 text-[10px] font-black px-3 py-1 rounded-lg uppercase tracking-widest border border-blue-100 flex items-center gap-1">
+                            <TrendingUp size={12} /> {detail.topic}
                           </span>
                         ))}
                       </div>
@@ -419,8 +447,8 @@ const SalesOpportunities: React.FC<SalesOpportunitiesProps> = ({
                       </td>
                       <td className="px-6 py-6">
                         <div className="flex flex-wrap gap-1">
-                          {opp.trainingTopics.map(t => (
-                            <span key={t} className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">{t}</span>
+                          {opp.trainingDetails.map((d, idx) => (
+                            <span key={idx} className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">{d.topic}</span>
                           ))}
                         </div>
                       </td>
@@ -515,32 +543,162 @@ const SalesOpportunities: React.FC<SalesOpportunitiesProps> = ({
                   </select>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Eğitim Konuları (Çoklu Seçilebilir)</label>
-                    <div className="flex flex-wrap gap-2 p-3 bg-slate-50 border border-slate-200 rounded-xl max-h-32 overflow-y-auto custom-scrollbar">
-                      {trainingTypes.map(t => {
-                        const isSelected = formData.trainingTopics.includes(t);
-                        return (
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Oluşturma Tarihi</label>
+                    <input
+                      type="date"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900 placeholder:text-slate-400 text-xs"
+                      value={formData.createdAt}
+                      onChange={(e) => setFormData({ ...formData, createdAt: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Satış Fırsatı Adı</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900 placeholder:text-slate-400 text-xs"
+                      placeholder="Örn: Q3 React Eğitimi"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Katılımcı Grubu</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900 placeholder:text-slate-400 text-xs"
+                      placeholder="Örn: Frontend Ekibi"
+                      value={formData.participantGroup}
+                      onChange={(e) => setFormData({ ...formData, participantGroup: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kapanış Tarihi</label>
+                    <input
+                      type="date"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900 placeholder:text-slate-400 text-xs"
+                      value={formData.estimatedCloseDate}
+                      onChange={(e) => setFormData({ ...formData, estimatedCloseDate: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-4 border-t border-slate-100">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <User size={14} /> İlgili Kişi Bilgileri
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        placeholder="İlgili Kişi (Ad Soyad)"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900 placeholder:text-slate-400 text-xs"
+                        value={formData.contactPerson.name}
+                        onChange={(e) => setFormData({ ...formData, contactPerson: { ...formData.contactPerson, name: e.target.value } })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        placeholder="İlgili Kişi Ünvan"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900 placeholder:text-slate-400 text-xs"
+                        value={formData.contactPerson.title}
+                        onChange={(e) => setFormData({ ...formData, contactPerson: { ...formData.contactPerson, title: e.target.value } })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <input
+                        type="email"
+                        placeholder="İlgili Kişi E-Mail"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900 placeholder:text-slate-400 text-xs"
+                        value={formData.contactPerson.email}
+                        onChange={(e) => setFormData({ ...formData, contactPerson: { ...formData.contactPerson, email: e.target.value } })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <input
+                        type="tel"
+                        placeholder="İlgili Kişi Telefon No"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900 placeholder:text-slate-400 text-xs"
+                        value={formData.contactPerson.phone}
+                        onChange={(e) => setFormData({ ...formData, contactPerson: { ...formData.contactPerson, phone: e.target.value } })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Eğitim Konuları ve Ücretleri</label>
+                    <div className="flex flex-col gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl max-h-60 overflow-y-auto custom-scrollbar">
+                      {formData.trainingDetails.map((detail, index) => (
+                        <div key={index} className="flex gap-2 items-center w-full">
+                          <select
+                            className="flex-1 min-w-0 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-blue-500"
+                            value={detail.topic}
+                            onChange={(e) => {
+                              const newDetails = [...formData.trainingDetails];
+                              newDetails[index].topic = e.target.value;
+                              setFormData({ ...formData, trainingDetails: newDetails });
+                            }}
+                          >
+                            <option value="">Konu Seçin...</option>
+                            {trainingTypes.map(t => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                          </select>
+                          <select
+                            className="w-32 px-2 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-blue-500 shrink-0"
+                            value={detail.format || 'Eğitim'}
+                            onChange={(e) => {
+                              const newDetails = [...formData.trainingDetails];
+                              newDetails[index].format = e.target.value as any;
+                              setFormData({ ...formData, trainingDetails: newDetails });
+                            }}
+                          >
+                            <option value="Eğitim">Eğitim</option>
+                            <option value="Webinar">Webinar</option>
+                            <option value="Grup Koçluğu">Grup Koçluğu</option>
+                            <option value="Seminer/Keynote">Seminer/Keynote</option>
+                            <option value="Workshop">Workshop</option>
+                          </select>
+                          <input
+                            type="number"
+                            placeholder="Tutar"
+                            className="w-20 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-900 outline-none focus:border-blue-500 shrink-0"
+                            value={detail.price || ''}
+                            onChange={(e) => {
+                              const newDetails = [...formData.trainingDetails];
+                              newDetails[index].price = parseFloat(e.target.value) || 0;
+                              setFormData({ ...formData, trainingDetails: newDetails });
+                            }}
+                          />
                           <button
-                            key={t}
                             type="button"
                             onClick={() => {
-                              if (isSelected) {
-                                setFormData({ ...formData, trainingTopics: formData.trainingTopics.filter(topic => topic !== t) });
-                              } else {
-                                setFormData({ ...formData, trainingTopics: [...formData.trainingTopics, t] });
-                              }
+                              setFormData({
+                                ...formData,
+                                trainingDetails: formData.trainingDetails.filter((_, i) => i !== index)
+                              });
                             }}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${isSelected
-                              ? 'bg-slate-900 text-white border-slate-900 shadow-md'
-                              : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                              }`}
+                            className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-all shrink-0"
                           >
-                            {t}
+                            <X size={16} />
                           </button>
-                        );
-                      })}
+                        </div>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setFormData({
+                          ...formData,
+                          trainingDetails: [...formData.trainingDetails, { topic: '', price: 0, format: 'Eğitim' }]
+                        })}
+                        className="flex items-center justify-center gap-2 py-2 border-2 border-dashed border-slate-200 rounded-lg text-xs font-bold text-slate-400 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all uppercase tracking-wide"
+                      >
+                        <Plus size={14} />
+                        Eğitim Ekle
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -548,14 +706,10 @@ const SalesOpportunities: React.FC<SalesOpportunitiesProps> = ({
                 {/* Pricing Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tutar</label>
-                    <input
-                      type="number"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900"
-                      placeholder="0.00"
-                      value={formData.amount}
-                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    />
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Toplam Tutar</label>
+                    <div className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-500">
+                      {formData.trainingDetails.reduce((sum, item) => sum + (item.price || 0), 0).toLocaleString()}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Para Birimi</label>
@@ -583,15 +737,7 @@ const SalesOpportunities: React.FC<SalesOpportunitiesProps> = ({
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Hedef Tarih</label>
-                  <input
-                    type="date"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-bold text-slate-900"
-                    value={formData.dateRequest}
-                    onChange={(e) => setFormData({ ...formData, dateRequest: e.target.value })}
-                  />
-                </div>
+
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Notlar / Kapsam</label>

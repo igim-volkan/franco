@@ -186,8 +186,8 @@ const CustomerDetail: React.FC<CustomerDetailProps> = ({ customer, opportunities
                     </div>
                     <div>
                       <h4 className="font-bold text-lg text-slate-900 font-heading flex flex-wrap gap-2">
-                        {opp.trainingTopics.map(t => (
-                          <span key={t}>{t}</span>
+                        {opp.trainingDetails.map((detail, idx) => (
+                          <span key={idx}>{detail.topic}{idx < opp.trainingDetails.length - 1 ? ', ' : ''}</span>
                         ))}
                       </h4>
                       <div className="flex items-center gap-3 mt-1">

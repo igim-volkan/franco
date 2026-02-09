@@ -93,14 +93,27 @@ export interface Opportunity {
   ownerId?: string; // Added ownerId field
   customerName: string;
   status: OpportunityStatus;
-  trainingTopics: string[]; // Changed from trainingType (string)
+  trainingDetails: {
+    topic: string;
+    price: number;
+    format?: 'Eğitim' | 'Webinar' | 'Grup Koçluğu' | 'Seminer/Keynote' | 'Workshop';
+  }[]; // Changed from trainingTopics
   currency: 'TL' | 'USD' | 'EUR';
   priceUnit: 'Toplam' | 'Günlük' | 'Saatlik';
   description: string;
   requestedDates: string[];
   amount?: number;
+  contactPerson?: { // New contact fields
+    name: string;
+    title: string;
+    email: string;
+    phone: string;
+  };
   tasks: OpportunityTask[];
   createdAt: string;
+  title?: string;
+  participantGroup?: string;
+  estimatedCloseDate?: string;
 }
 
 export interface TrainingEvent {
@@ -117,4 +130,4 @@ export interface TrainingEvent {
   status: 'Planlandı' | 'Tamamlandı' | 'İptal Edildi';
 }
 
-export type ViewType = 'dashboard' | 'my_page' | 'crm' | 'sales' | 'calendar' | 'tasks' | 'customer_detail' | 'settings';
+export type ViewType = 'dashboard' | 'my_page' | 'crm' | 'sales' | 'operations' | 'calendar' | 'tasks' | 'customer_detail' | 'settings';

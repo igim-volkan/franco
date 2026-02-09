@@ -34,6 +34,7 @@ import CustomerDetail from './components/CustomerDetail';
 import Settings from './components/Settings';
 import Tasks from './components/Tasks';
 import MyPage from './components/MyPage';
+import Operations from './components/Operations';
 
 const App: React.FC = () => {
   // Mock logged in user (Sarp Yılmaz)
@@ -84,14 +85,26 @@ const App: React.FC = () => {
       id: 'FRS-1001',
       customerId: 'MST-001',
       ownerId: 'INS-001', // Assigned to Sarp Yılmaz
-      customerName: 'TechFlow Yazılım',
+      customerName: 'TechFlow Bilişim A.Ş.',
       status: OpportunityStatus.PROPOSAL_SENT,
-      trainingTopics: [TrainingTypeDefaults.LEADERSHIP, 'React'], // Changed to array
+      title: 'Q2 React Geliştirme Eğitimi',
+      participantGroup: 'Frontend Ekibi',
+      estimatedCloseDate: '2024-05-30',
+      trainingDetails: [
+        { topic: TrainingTypeDefaults.LEADERSHIP, price: 25000, format: 'Eğitim' },
+        { topic: 'React', price: 20000, format: 'Workshop' }
+      ], // Changed to array of objects
       currency: 'TL',
       priceUnit: 'Toplam',
       description: 'Frontend ekibi için React ve TypeScript İleri Seviye Eğitimi.',
       requestedDates: ['2024-06-15', '2024-06-16'],
-      amount: 45000, // Updated amount
+      amount: 45000,
+      contactPerson: {
+        name: 'Arda Yılmaz',
+        title: 'Eğitim Müdürü',
+        email: 'arda.yilmaz@techflow.com',
+        phone: '+90 532 123 45 67'
+      }, // Added mock contact data
       tasks: [
         { id: 'TSK-1', text: 'Teklif dokümanını hazırla', dueDate: '2024-06-10', status: TaskStatus.DONE }
       ],
@@ -344,6 +357,12 @@ const App: React.FC = () => {
                 onUpdateStatus={updateOpportunityStatus}
                 onAddTask={handleAddTask}
                 onUpdateTaskStatus={handleUpdateTaskStatus}
+              />
+            )}
+            {activeView === 'operations' && (
+              <Operations
+                opportunities={opportunities}
+                customers={customers}
               />
             )}
             {activeView === 'tasks' && (
