@@ -16,7 +16,8 @@ import {
   TrendingUp,
   GraduationCap,
   ListTodo,
-  Layers // Imported Layers icon
+  Layers,
+  Layout as LayoutKanbanIcon // Fallback if LayoutKanban doesn't exist, aliasing Layout to LayoutKanbanIcon
 } from 'lucide-react';
 import { OpportunityStatus } from './types';
 
@@ -25,6 +26,7 @@ export const NAVIGATION_ITEMS = [
   { id: 'my_page', label: 'Sayfam', icon: <TrendingUp size={20} /> },
   { id: 'crm', label: 'Müşteriler', icon: <Users size={20} /> },
   { id: 'sales', label: 'Satış Fırsatları', icon: <Briefcase size={20} /> },
+  { id: 'process_management', label: 'Süreç Yönetimi', icon: <LayoutKanbanIcon size={20} /> },
   { id: 'operations', label: 'Operasyon', icon: <Layers size={20} /> },
   { id: 'tasks', label: 'Görevler', icon: <ListTodo size={20} /> },
   { id: 'calendar', label: 'Eğitmen Takvimi', icon: <CalendarIcon size={20} /> },

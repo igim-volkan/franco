@@ -130,4 +130,4 @@ export interface TrainingEvent {
   status: 'Planlandı' | 'Tamamlandı' | 'İptal Edildi';
 }
 
-export type ViewType = 'dashboard' | 'my_page' | 'crm' | 'sales' | 'operations' | 'calendar' | 'tasks' | 'customer_detail' | 'settings';
+export type ViewType = 'dashboard' | 'my_page' | 'crm' | 'sales' | 'process_management' | 'operations' | 'calendar' | 'tasks' | 'customer_detail' | 'settings';

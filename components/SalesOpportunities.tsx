@@ -33,6 +33,7 @@ interface SalesOpportunitiesProps {
   onUpdateStatus: (id: string, status: OpportunityStatus) => void;
   onAddTask: (opportunityId: string, task: OpportunityTask) => void;
   onUpdateTaskStatus: (opportunityId: string, taskId: string, status: TaskStatus) => void;
+  onSplitOpportunity: (id: string, wonIndices: number[]) => void;
 }
 
 const StatusBar: React.FC<{ currentStatus: OpportunityStatus, onStatusClick: (s: OpportunityStatus) => void }> = ({ currentStatus, onStatusClick }) => {
@@ -105,7 +106,8 @@ const SalesOpportunities: React.FC<SalesOpportunitiesProps> = ({
   onAddOpportunity,
   onUpdateStatus,
   onAddTask,
-  onUpdateTaskStatus
+  onUpdateTaskStatus,
+  onSplitOpportunity
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'list' | 'requests'>('list');
@@ -118,6 +120,13 @@ const SalesOpportunities: React.FC<SalesOpportunitiesProps> = ({
 
   // Status Confirmation State
   const [pendingStatusChange, setPendingStatusChange] = useState<{ oppId: string, newStatus: OpportunityStatus } | null>(null);
+
+  // Win Confirmation State
+  const [winConfirmation, setWinConfirmation] = useState<{
+    oppId: string,
+    trainingDetails: { topic: string; price: number }[],
+    selectedIndices: number[]
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     customerId: '',
@@ -336,15 +345,7 @@ const SalesOpportunities: React.FC<SalesOpportunitiesProps> = ({
                         </div>
                       </div>
 
-                      {/* AI Button */}
-                      <button
-                        onClick={() => handleGenerateOutline(opp)}
-                        disabled={isGenerating}
-                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-fuchsia-500/20 hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                        {isGenerating ? 'Düşünüyor...' : 'AI Asistan'}
-                      </button>
+
                     </div>
 
                     {aiSuggestion && (
@@ -410,7 +411,24 @@ const SalesOpportunities: React.FC<SalesOpportunitiesProps> = ({
                     <TrendingUp size={14} />
                     Süreç Yönetimi
                   </h4>
-                  <StatusBar currentStatus={opp.status} onStatusClick={(s) => setPendingStatusChange({ oppId: opp.id, newStatus: s })} />
+                  <StatusBar
+                    currentStatus={opp.status}
+                    onStatusClick={(s) => {
+                      if (s === OpportunityStatus.WON) {
+                        if (opp.trainingDetails.length > 1) {
+                          setWinConfirmation({
+                            oppId: opp.id,
+                            trainingDetails: opp.trainingDetails,
+                            selectedIndices: opp.trainingDetails.map((_, i) => i) // Default all selected
+                          });
+                        } else {
+                          setPendingStatusChange({ oppId: opp.id, newStatus: s });
+                        }
+                      } else {
+                        setPendingStatusChange({ oppId: opp.id, newStatus: s });
+                      }
+                    }}
+                  />
                 </div>
               </div>
             );
@@ -468,6 +486,87 @@ const SalesOpportunities: React.FC<SalesOpportunitiesProps> = ({
           </div>
         )}
       </div>
+
+      {/* Win Confirmation Modal (Partial/Full Split) */}
+      {
+        winConfirmation && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-white/20">
+              <div className="px-8 py-6 border-b border-slate-100 flex items-center gap-4 bg-emerald-50/50">
+                <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/30">
+                  <CheckCircle2 size={24} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 font-heading">Kazanımı Doğrula</h2>
+                  <p className="text-emerald-600 text-xs font-bold mt-0.5 uppercase tracking-wide">Hangi eğitimler kazanıldı?</p>
+                </div>
+              </div>
+
+              <div className="p-8">
+                <p className="text-sm font-medium text-slate-500 mb-4">
+                  Kazanılan eğitimleri seçin. Seçilmeyenler otomatik olarak <strong>Kaybedildi</strong> statüsünde yeni bir fırsata dönüştürülecektir.
+                </p>
+
+                <div className="space-y-3 mb-6 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                  {winConfirmation.trainingDetails.map((detail, idx) => {
+                    const isSelected = winConfirmation.selectedIndices.includes(idx);
+                    // Handle potential recursive update issue by using functional state update or simple array logic
+                    const handleToggle = () => {
+                      const newIndices = isSelected
+                        ? winConfirmation.selectedIndices.filter(i => i !== idx)
+                        : [...winConfirmation.selectedIndices, idx];
+                      setWinConfirmation(prev => prev ? ({ ...prev, selectedIndices: newIndices }) : null);
+                    };
+
+                    return (
+                      <div
+                        key={idx}
+                        onClick={handleToggle}
+                        className={`flex items-center justify-between p-4 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 bg-white hover:border-slate-200'}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center border-2 transition-colors ${isSelected ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300'}`}>
+                            {isSelected && <CheckCircle2 size={12} className="text-white" />}
+                          </div>
+                          <span className={`text-sm font-bold ${isSelected ? 'text-emerald-900' : 'text-slate-600'}`}>{detail.topic}</span>
+                        </div>
+                        <span className="text-xs font-bold text-slate-400">{(detail.price || 0).toLocaleString()}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-slate-100">
+                  <button
+                    onClick={() => setWinConfirmation(null)}
+                    className="flex-1 px-4 py-3 border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-50 transition-all uppercase text-xs tracking-widest"
+                  >
+                    Vazgeç
+                  </button>
+                  <button
+                    disabled={winConfirmation.selectedIndices.length === 0}
+                    onClick={() => {
+                      const isAllSelected = winConfirmation.selectedIndices.length === winConfirmation.trainingDetails.length;
+
+                      if (isAllSelected) {
+                        // All won logic
+                        onUpdateStatus(winConfirmation.oppId, OpportunityStatus.WON);
+                      } else {
+                        // Partial logic
+                        onSplitOpportunity(winConfirmation.oppId, winConfirmation.selectedIndices);
+                      }
+                      setWinConfirmation(null);
+                    }}
+                    className="flex-1 px-4 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 uppercase text-xs tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Onayla ({winConfirmation.selectedIndices.length})
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      }
 
       {/* Status Confirmation Modal */}
       {

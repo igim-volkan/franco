@@ -35,6 +35,7 @@ import Settings from './components/Settings';
 import Tasks from './components/Tasks';
 import MyPage from './components/MyPage';
 import Operations from './components/Operations';
+import ProcessManagement from './components/ProcessManagement';
 
 const App: React.FC = () => {
   // Mock logged in user (Sarp Yılmaz)
@@ -232,6 +233,41 @@ const App: React.FC = () => {
     return item ? item.label : view;
   };
 
+  const handleSplitOpportunity = (originalOppId: string, wonTrainingIndices: number[]) => {
+    // 1. Separate items
+    const originalOpp = opportunities.find(o => o.id === originalOppId);
+    if (!originalOpp) return;
+
+    const wonItems = originalOpp.trainingDetails.filter((_, i) => wonTrainingIndices.includes(i));
+    const lostItems = originalOpp.trainingDetails.filter((_, i) => !wonTrainingIndices.includes(i));
+
+    // 2. Calculate amounts
+    const wonAmount = wonItems.reduce((sum, item) => sum + (item.price || 0), 0);
+    const lostAmount = lostItems.reduce((sum, item) => sum + (item.price || 0), 0);
+
+    // 3. Update original opportunity (Won part)
+    const updatedOriginal = {
+      ...originalOpp,
+      status: OpportunityStatus.WON,
+      trainingDetails: wonItems,
+      amount: wonAmount,
+      description: `${originalOpp.description} (Kazanılan Kısım)`,
+    };
+
+    // 4. Create new opportunity (Lost part)
+    const lostOpp: Opportunity = {
+      ...originalOpp,
+      id: `${originalOpp.id}-LOST`,
+      status: OpportunityStatus.LOST,
+      trainingDetails: lostItems,
+      amount: lostAmount,
+      description: `${originalOpp.description} (Kaybedilen Kısım)`,
+      createdAt: new Date().toISOString()
+    };
+
+    setOpportunities(prev => prev.map(o => o.id === originalOppId ? updatedOriginal : o).concat(lostOpp));
+  };
+
   const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
 
   return (
@@ -357,12 +393,20 @@ const App: React.FC = () => {
                 onUpdateStatus={updateOpportunityStatus}
                 onAddTask={handleAddTask}
                 onUpdateTaskStatus={handleUpdateTaskStatus}
+                onSplitOpportunity={handleSplitOpportunity}
               />
             )}
             {activeView === 'operations' && (
               <Operations
                 opportunities={opportunities}
                 customers={customers}
+              />
+            )}
+            {activeView === 'process_management' && (
+              <ProcessManagement
+                opportunities={opportunities}
+                onUpdateStatus={updateOpportunityStatus}
+                onSplitOpportunity={handleSplitOpportunity}
               />
             )}
             {activeView === 'tasks' && (
